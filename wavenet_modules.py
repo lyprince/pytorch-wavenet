@@ -24,7 +24,7 @@ def dilate(x, dilation, init_dilation=1, pad_start=True):
     new_l = int(np.ceil(l / dilation_factor) * dilation_factor)
     if new_l != l:
         l = new_l
-        x = constant_pad_1d(x, new_l, dimension=2, pad_start=pad_start)
+        x = constant_pad_1d(x, new_l, pad_start=pad_start)
 
     l_old = int(round(l / dilation_factor))
     n_old = int(round(n * dilation_factor))
@@ -75,9 +75,8 @@ class DilatedQueue:
         self.data = Variable(self.dtype(self.num_channels, self.max_length).zero_())
         self.in_pos = 0
         self.out_pos = 0
-
-
-class ConstantPad1d(Function):
+        
+class ConstantPad1d():
     def __init__(self, target_size, dimension=0, value=0, pad_start=False):
         super(ConstantPad1d, self).__init__()
         self.target_size = target_size
@@ -121,7 +120,11 @@ class ConstantPad1d(Function):
 
 def constant_pad_1d(input,
                     target_size,
-                    dimension=0,
                     value=0,
                     pad_start=False):
-    return ConstantPad1d(target_size, dimension, value, pad_start)(input)
+    padding_size = target_size-input.shape[-1]
+    if pad_start:
+        padding = (padding_size, 0)
+    else:
+        padding = (0, padding_size)
+    return nn.ConstantPad1d(padding=padding, value=value)(input)

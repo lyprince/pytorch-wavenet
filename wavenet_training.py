@@ -7,7 +7,7 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 from model_logging import Logger
 from wavenet_modules import *
-
+import pdb
 
 def print_last_loss(opt):
     print("loss: ", opt.losses[-1])
@@ -40,7 +40,8 @@ class WavenetTrainer:
         self.optimizer_type = optimizer
         self.optimizer = self.optimizer_type(params=self.model.parameters(), lr=self.lr, weight_decay=self.weight_decay)
         self.logger = logger
-        self.logger.trainer = self
+        if self.logger is not None:
+            self.logger.trainer = self
         self.snapshot_path = snapshot_path
         self.snapshot_name = snapshot_name
         self.snapshot_interval = snapshot_interval
@@ -69,7 +70,7 @@ class WavenetTrainer:
                 loss = F.cross_entropy(output.squeeze(), target.squeeze())
                 self.optimizer.zero_grad()
                 loss.backward()
-                loss = loss.data[0]
+                loss = loss.data
 
                 if self.clip is not None:
                     torch.nn.utils.clip_grad_norm(self.model.parameters(), self.clip)
@@ -86,8 +87,9 @@ class WavenetTrainer:
                         continue
                     time_string = time.strftime("%Y-%m-%d_%H-%M-%S", time.gmtime())
                     torch.save(self.model, self.snapshot_path + '/' + self.snapshot_name + '_' + time_string)
-
-                self.logger.log(step, loss)
+                    
+                if self.logger is not None:
+                    self.logger.log(step, loss)
 
     def validate(self):
         self.model.eval()
